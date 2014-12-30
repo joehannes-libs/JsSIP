@@ -61,6 +61,7 @@ function RTCSession(ua) {
   this.dialog = null;
   this.earlyDialogs = {};
   this.rtcMediaHandler = null;
+  this.audioVolume = this.ua.audioVolume;
 
   // RTCSession confirmation flag
   this.is_confirmed = false;
@@ -145,6 +146,26 @@ RTCSession.prototype = new EventEmitter();
 /**
  * User API
  */
+
+/**
+ * Control audio volume
+ */
+RTCSession.prototype.gain = function(audioVolume) {
+    if (audioVolume !== undefined && audioVolume !== null) {
+        var level = Number(audioVolume);
+        if (level >= 0 && level <= 1) {
+            this.audioVolume = level;
+            if (this.rtcMediaHandler && this.rtcMediaHandler.gain) {
+                this.rtcMediaHandler.gain(this.audioVolume);
+            }
+        } else {
+            throw {
+                msg: "Audio Volume must be in range {0..1}"
+            };
+        }
+    }
+    return this.audioVolume;
+};
 
 /**
  * Terminate the call.
@@ -1423,9 +1444,8 @@ RTCSession.prototype.receiveRequest = function(request) {
  * Initial Request Sender
  */
 RTCSession.prototype.sendInitialRequest = function(mediaConstraints, RTCOfferConstraints, mediaStream) {
-  var
-  self = this,
- request_sender = new RequestSender(self, this.ua),
+    var self = this,
+        request_sender = new RequestSender(self, this.ua),
 
  // User media succeeded
  userMediaSucceeded = function(stream) {
@@ -1495,9 +1515,9 @@ RTCSession.prototype.sendInitialRequest = function(mediaConstraints, RTCOfferCon
    userMediaSucceeded(mediaStream);
  } else {
    this.rtcMediaHandler.getUserMedia(
-     userMediaSucceeded,
-     userMediaFailed,
-     mediaConstraints
+        userMediaSucceeded,
+        userMediaFailed,
+        mediaConstraints
    );
  }
 };

@@ -5,6 +5,7 @@ module.exports = RTCMediaHandler;
  */
 var JsSIP_C = require('../Constants');
 var WebRTC = require('../WebRTC');
+var AudioControl = require('../AudioControl');
 
 
 /* RTCMediaHandler
@@ -20,6 +21,7 @@ function RTCMediaHandler(session, constraints) {
   this.localMedia = null;
   this.peerConnection = null;
   this.ready = true;
+  this.audioVolume = this.session.audioVolume;
 
   this.init(constraints);
 }
@@ -124,7 +126,10 @@ RTCMediaHandler.prototype = {
 
   addStream: function(stream, onSuccess, onFailure, constraints) {
     try {
-      this.peerConnection.addStream(stream, constraints);
+      this.ac = new AudioControl();
+      this.ac.initialize(stream);
+      this.ac.gain(this.gain());
+      this.peerConnection.addStream(this.ac.out(), constraints);
     } catch(e) {
       this.logger.error('error adding stream');
       this.logger.error(e);
@@ -133,6 +138,23 @@ RTCMediaHandler.prototype = {
     }
 
     onSuccess();
+  },
+
+  gain: function(audioVolume) {
+    if (audioVolume !== undefined && audioVolume !== null) {
+        var level = Number(audioVolume);
+        if (level >= 0 && level <= 1) {
+            this.audioVolume = level;
+            if (this.ac && this.ac.gain) {
+                this.ac.gain(this.audioVolume);
+            }
+        } else {
+            throw {
+                msg: "Audio Volume must be in range {0..1}"
+            };
+        }
+    }
+    return this.audioVolume;
   },
 
   /**

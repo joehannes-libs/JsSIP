@@ -265,6 +265,24 @@ UA.prototype.call = function(target, options) {
   session.connect(target, options);
 };
 
+UA.prototype.gain = function(audioVolume) {
+    if (audioVolume !== undefined && audioVolume !== null) {
+        var level = Number(audioVolume);
+        if (level >= 0 && level <= 1) {
+            this.audioVolume = level;
+            for (var session in this.sessions) {
+                this.logger.debug('adjusting volume of session ' + session);
+                return this.sessions[session].gain(this.audioVolume);
+            }
+        } else {
+            throw {
+                msg: "Audio Volume must be in range {0..1}"
+            };
+        }
+    }
+    return this.audioVolume;
+};
+
 /**
  * Send a message.
  *
